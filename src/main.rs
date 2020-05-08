@@ -11,8 +11,8 @@ async fn sleepy() -> Result<impl warp::Reply, Infallible> {
     Ok(format!("I waited {} seconds!", seconds))
 }
 
-#[tokio::main]
-async fn main() {
+
+fn main() {
 
     println!("start server ...");
 
@@ -86,7 +86,12 @@ async fn main() {
         .or(route_async)
         .or(routes_default);
 
-    warp::serve(routes)
-        .run(([127, 0, 0, 1], 3030))
-        .await;
+    for _ in 0..num_cpus::get() {
+        std::thread::spawn(|| smol::run(futures::future::pending::<()>()));
+    }
+    smol::block_on(async {
+        warp::serve(routes)
+            .run(([127, 0, 0, 1], 3030))
+            .await;
+    });
 }
